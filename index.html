@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islamic Site - Masror</title>
+    <style>
+        :root { --gold: #d4af37; --bg: #000; --card: #161616; --txt: #fff; }
+        body { background-color: var(--bg); color: var(--txt); font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; text-align: center; overflow-x: hidden; }
+        
+        /* Header & Name */
+        .user-name { background: linear-gradient(to right, #000, var(--gold), #000); color: black; padding: 10px; font-weight: bold; font-size: 22px; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 100; }
+
+        /* Language Select */
+        #lang-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .btn-l { background: var(--gold); color: black; border: none; padding: 15px 40px; margin: 10px; border-radius: 30px; font-weight: bold; font-size: 20px; cursor: pointer; width: 80%; }
+
+        /* Main Menu */
+        #main-app, .page { display: none; padding: 20px; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .box { background: var(--card); border: 2px solid var(--gold); padding: 25px 10px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .box:active { transform: scale(0.9); background: var(--gold); color: black; }
+
+        /* Content Styles */
+        .back-btn { background: var(--gold); color: black; border: none; padding: 12px; width: 100%; border-radius: 12px; margin-bottom: 20px; font-weight: bold; cursor: pointer; }
+        .card { background: var(--card); border-right: 6px solid var(--gold); padding: 20px; margin-bottom: 15px; border-radius: 10px; text-align: right; }
+        .card strong { color: var(--gold); display: block; margin-bottom: 8px; font-size: 20px; }
+        
+        /* Quran Controls */
+        select, input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; color: white; border: 1px solid var(--gold); border-radius: 10px; font-size: 16px; }
+        .q-text { font-size: 24px; line-height: 2.2; color: #f9e29c; padding: 15px; display: none; background: #080808; border-radius: 10px; }
+        audio { width: 100%; margin-top: 10px; filter: invert(1); }
+
+        /* Compass (Qibla) */
+        #compass { width: 200px; height: 200px; border: 5px solid var(--gold); border-radius: 50%; margin: 20px auto; position: relative; transition: transform 0.1s; }
+        #arrow { width: 5px; height: 100px; background: red; position: absolute; top: 0; left: 50%; transform-origin: bottom; }
+
+        /* Tasbih */
+        .tasbih-box { width: 150px; height: 150px; border: 6px solid var(--gold); border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-size: 45px; cursor: pointer; box-shadow: 0 0 20px var(--gold); }
+    </style>
+</head>
+<body>
+
+    <div class="user-name" id="user-display">Masror Shrefe</div>
+
+    <div id="lang-screen">
+        <h1 style="color:var(--gold)">Hèlبjêre / اختر</h1>
+        <button class="btn-l" onclick="init('badini')">بادینی</button>
+        <button class="btn-l" onclick="init('sorani')">سورانی</button>
+        <button class="btn-l" onclick="init('arabic')">العربية</button>
+    </div>
+
+    <div id="main-app">
+        <div class="grid">
+            <div class="box" onclick="go('quran')">📖 <span class="t-q">قورعان</span></div>
+            <div class="box" onclick="go('hadith')">📜 <span class="t-h">٥٠ فەرموودە</span></div>
+            <div class="box" onclick="go('dua')">🤲 <span class="t-d">٥٠ دوعا</span></div>
+            <div class="box" onclick="go('wird')">📿 <span class="t-w">٥٠ وێرد</span></div>
+            <div class="box" onclick="go('lect')">🎙️ <span class="t-l">گۆتار</span></div>
+            <div class="box" onclick="go('qibla')">🕋 <span class="t-qi">قیبلە</span></div>
+        </div>
+        <div class="tasbih-box" onclick="count++" id="t-count">0</div>
+        <button onclick="count=0; document.getElementById('t-count').innerText=0" style="color:gray; background:none; border:none; cursor:pointer;">Reset (سفرکرن)</button>
+    </div>
+
+    <div id="view-page" class="page">
+        <button class="back-btn" onclick="back()">↩️ <span class="t-back">Back</span></button>
+        <div id="controls" style="display:none;">
+            <select id="reciter" onchange="loadQuran()">
+                <option value="yasser">یاسر الدوسري</option>
+                <option value="basit">عبدالباسط عبدالصمد</option>
+                <option value="minsh">المنشاوي</option>
+                <option value="shatri">أبو بكر الشاطري</option>
+                <option value="ajmy">أحمد العجمي</option>
+            </select>
+            <input type="text" id="q-search" placeholder="Search..." onkeyup="searchQ()">
+        </div>
+        <div id="list-area"></div>
+    </div>
+
+    <script>
+        let lang = 'badini'; let count = 0; let surahs = [];
+        const ui = {
+            badini: { q:"قورعان", h:"٥٠ فەرموودە", d:"٥٠ دوعا", w:"٥٠ وێرد", l:"گۆتار", qi:"قیبلە", back:"زڤرین" },
+            sorani: { q:"قورئان", h:"٥٠ فەرموودە", d:"٥٠ دوعا", w:"٥٠ وێرد", l:"وتار", qi:"قیبلە", back:"گەڕانەوە" },
+            arabic: { q:"القرآن", h:"٥٠ حديث", d:"٥٠ دعاء", w:"٥٠ ذكر", l:"المحاضرات", qi:"القبلة", back:"رجوع" }
+        };
+
+        async function init(l) {
+            lang = l; document.getElementById('lang-screen').style.display='none';
+            document.getElementById('main-app').style.display='block';
+            document.getElementById('user-display').innerText = "Masror Shrefe - " + ui[lang].q;
+            const res = await fetch("https://api.alquran.cloud/v1/surah");
+            const data = await res.json(); surahs = data.data;
+            updateTexts();
+        }
+
+        function updateTexts() {
+            const t = ui[lang];
+            document.querySelectorAll('.t-q').forEach(e => e.innerText = t.q);
+            document.querySelectorAll('.t-back').forEach(e => e.innerText = t.back);
+            // ... add others
+        }
+
+        function go(type) {
+            document.getElementById('main-app').style.display='none';
+            document.getElementById('view-page').style.display='block';
+            const area = document.getElementById('list-area');
+            const ctrl = document.getElementById('controls');
+            area.innerHTML = ""; ctrl.style.display = (type === 'quran') ? 'block' : 'none';
+
+            if(type === 'quran') loadQuran();
+            else if(type === 'hadith') for(let i=1; i<=50; i++) area.innerHTML += `<div class="card"><strong>فەرموودا ${i}</strong><p>قَالَ ﷺ: خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ.</p></div>`;
+            else if(type === 'wird') for(let i=1; i<=50; i++) area.innerHTML += `<div class="card"><strong>زیکرێ ${i}</strong><p>سُبْحَانَ اللهِ وَبِحَمْدِهِ.</p></div>`;
+            else if(type === 'dua') for(let i=1; i<=50; i++) area.innerHTML += `<div class="card"><strong>دوعایا ${i}</strong><p>اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ.</p></div>`;
+            else if(type === 'lect') area.innerHTML = `<select onchange="window.open(this.value)"><option>هەلبژارتنا مامۆستای...</option><option value="https://www.youtube.com/@MelaHarmanBesfki/videos">مەلا هەرمان بێسفکی</option><option value="https://www.youtube.com/@malamaxloof">مەلا مەخلووف</option></select>`;
+            else if(type === 'qibla') {
+                area.innerHTML = `<h3>قیبلە (لدیف موبایلێ)</h3><div id="compass"><div id="arrow"></div></div><p>موبایلا خۆ بسەورینە</p>`;
+                window.addEventListener('deviceorientation', (e) => {
+                    document.getElementById('compass').style.transform = `rotate(${-e.alpha}deg)`;
+                });
+            }
+        }
+
+        function loadQuran() {
+            const area = document.getElementById('list-area');
+            const r = document.getElementById('reciter').value;
+            const servers = { yasser:'yasser', basit:'basit', minsh:'minsh', shatri:'shatri', ajmy:'ajmy' };
+            area.innerHTML = surahs.map(s => `
+                <div class="card q-box" data-n="${s.name}">
+                    <strong>${s.number}. ${s.name}</strong>
+                    <audio controls preload="none"><source src="https://server11.mp3quran.net/${servers[r]}/${String(s.number).padStart(3,'0')}.mp3"></audio>
+                    <button class="back-btn" style="margin-top:10px;" onclick="getT(${s.number})">دەق (Text)</button>
+                    <div id="t-${s.number}" class="q-text"></div>
+                </div>`).join('');
+        }
+
+        async function getT(n) {
+            const d = document.getElementById(`t-${n}`);
+            if(d.style.display === "block") { d.style.display = "none"; return; }
+            d.style.display = "block"; d.innerText = "چاڤەڕێ بکە...";
+            const res = await fetch(`https://api.alquran.cloud/v1/surah/${n}`);
+            const j = await res.json();
+            d.innerText = j.data.ayahs.map(a => a.text).join(' ۝ ');
+        }
+
+        function searchQ() {
+            let v = document.getElementById('q-search').value.toLowerCase();
+            document.querySelectorAll('.q-box').forEach(b => b.style.display = b.getAttribute('data-n').includes(v)?'block':'none');
+        }
+
+        function back() { document.getElementById('view-page').style.display='none'; document.getElementById('main-app').style.display='block'; }
+        setInterval(() => { if(document.getElementById('t-count')) document.getElementById('t-count').innerText = count; }, 100);
+    </script>
+</body>
+</html>
