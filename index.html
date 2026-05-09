@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پڕۆژەیا ئیسلامی</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark: #121212;
+            --gray: #1e1e1e;
+            --text: #ffffff;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* لاپەرێ دەستپێکێ (زمان) */
+        #language-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100vh;
+            width: 100%;
+            text-align: center;
+        }
+
+        .lang-btn {
+            background-color: var(--gold);
+            color: black;
+            border: none;
+            padding: 15px 40px;
+            margin: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 80%;
+            align-self: center;
+        }
+
+        /* لاپەرێ سەرەکی */
+        #main-page, .sub-page {
+            display: none;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .menu-item {
+            background-color: var(--gray);
+            border: 2px solid var(--gold);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* تەسبیحا بازنەیی */
+        .tasbih-section {
+            margin-top: 30px;
+            text-align: center;
+            background: var(--gray);
+            padding: 20px;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border: 5px solid var(--gold);
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* لاپەرێن دوعا و فەرموودە */
+        .back-btn {
+            background-color: var(--gold);
+            color: black;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .list-container {
+            background-color: var(--gray);
+            border-radius: 15px;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+
+        .list-item {
+            border-bottom: 1px solid #333;
+            padding: 15px 10px;
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        .list-number { color: var(--gold); font-weight: bold; }
+
+        .lecture-link {
+            display: block;
+            background: #2a2a2a;
+            color: white;
+            text-decoration: none;
+            padding: 15px;
+            margin: 10px 0;
+            border-right: 5px solid var(--gold);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="language-page">
+        <h2 id="welcome-txt">ب خێر بێی - بەخێربێن - أهلاً بكم</h2>
+        <button class="lang-btn" onclick="setLanguage('badini')">بادینی</button>
+        <button class="lang-btn" onclick="setLanguage('sorani')">سۆرانی</button>
+        <button class="lang-btn" onclick="setLanguage('arabic')">العربية</button>
+    </div>
+
+    <div id="main-page">
+        <h2 id="main-title" style="text-align:center; color:var(--gold);">پڕۆژەیا ئیسلامی</h2>
+        <div class="menu-grid">
+            <div class="menu-item" onclick="showPage('quran')">📖 <span class="m-quran">قورعان</span></div>
+            <div class="menu-item" onclick="showPage('hadith')">📜 <span class="m-hadith">فەرموودە</span></div>
+            <div class="menu-item" onclick="showPage('dua')">🤲 <span class="m-dua">دوعا</span></div>
+            <div class="menu-item" onclick="showPage('wird')">📿 <span class="m-wird">وێرد</span></div>
+            <div class="menu-item" onclick="showPage('lectures')">🎙️ <span class="m-lect">گۆتار</span></div>
+            <div class="menu-item" onclick="showPage('qibla')">🕋 <span class="m-qibla">قیبلە</span></div>
+        </div>
+        
+        <div class="tasbih-section" onclick="countTasbih()">
+            <div id="tasbih-num" style="font-size: 30px;">0</div>
+            <div class="m-tasbih">تەسبیح</div>
+        </div>
+    </div>
+
+    <div id="dua-page" class="sub-page">
+        <div class="back-btn" onclick="showMain()"><span class="btn-back">زڤرین</span> ↩️</div>
+        <div class="list-container" id="dua-list">
+            </div>
+    </div>
+
+    <div id="lectures-page" class="sub-page">
+        <div class="back-btn" onclick="showMain()"><span class="btn-back">زڤرین</span> ↩️</div>
+        <div id="lect-list"></div>
+    </div>
+
+    <script>
+        let currentLang = 'badini';
+        let tasbihCount = 0;
+
+        const translations = {
+            badini: { main: "پڕۆژەیا ئیسلامی", quran: "قورعان", hadith: "فەرموودە", dua: "دوعا", wird: "وێرد", lect: "گۆتار", qibla: "قیبلە", tasbih: "تەسبیح", back: "زڤرین" },
+            sorani: { main: "پڕۆژەی ئیسلامی", quran: "قورئان", hadith: "فەرموودە", dua: "دوعا", wird: "ویرد", lect: "وتار", qibla: "قیبلە", tasbih: "تەسبیح", back: "گەڕانەوە" },
+            arabic: { main: "المشروع الإسلامي", quran: "القرآن", hadith: "الأحاديث", dua: "الأدعية", wird: "الأذكار", lect: "المحاضرات", qibla: "القبلة", tasbih: "تسبيح", back: "رجوع" }
+        };
+
+        const duaData = [
+            { id: 1, title: { badini: "دوعایا نڤستنێ", sorani: "دوعای خەوتن", arabic: "دعاء النوم" }, text: "بِاسْمِكَ اللّهُمَّ أَمُوتُ وَأَحْيَا" },
+            { id: 2, title: { badini: "دوعایا ژ خەو ڕابوونێ", sorani: "دوعای خەبەربوونەوە", arabic: "دعاء الاستيقاظ" }, text: "الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ" }
+        ];
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('language-page').style.display = 'none';
+            document.getElementById('main-page').style.display = 'block';
+            updateUI();
+        }
+
+        function updateUI() {
+            const t = translations[currentLang];
+            document.getElementById('main-title').innerText = t.main;
+            document.querySelectorAll('.m-quran').forEach(el => el.innerText = t.quran);
+            document.querySelectorAll('.m-hadith').forEach(el => el.innerText = t.hadith);
+            document.querySelectorAll('.m-dua').forEach(el => el.innerText = t.dua);
+            document.querySelectorAll('.m-wird').forEach(el => el.innerText = t.wird);
+            document.querySelectorAll('.m-lect').forEach(el => el.innerText = t.lect);
+            document.querySelectorAll('.m-qibla').forEach(el => el.innerText = t.qibla);
+            document.querySelectorAll('.m-tasbih').forEach(el => el.innerText = t.tasbih);
+            document.querySelectorAll('.btn-back').forEach(el => el.innerText = t.back);
+        }
+
+        function showPage(pageId) {
+            document.getElementById('main-page').style.display = 'none';
+            if(pageId === 'dua') {
+                loadDuas();
+                document.getElementById('dua-page').style.display = 'block';
+            } else if (pageId === 'lectures') {
+                loadLectures();
+                document.getElementById('lectures-page').style.display = 'block';
+            }
+        }
+
+        function loadDuas() {
+            const list = document.getElementById('dua-list');
+            list.innerHTML = "";
+            duaData.forEach(item => {
+                list.innerHTML += `
+                    <div class="list-item">
+                        <span class="list-number">${item.id}.</span>
+                        <div>
+                            <strong style="color:var(--gold)">${item.title[currentLang]}</strong><br>
+                            <p style="margin:5px 0;">${item.text}</p>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function loadLectures() {
+            const list = document.getElementById('lect-list');
+            list.innerHTML = "";
+            // لێرەدا لینکێن یوتیوبی دێ هێنە دانان بەپێی زمان
+            if(currentLang === 'badini') {
+                list.innerHTML = `<a class="lecture-link" href="https://youtube.com/results?search_query=Mela+Harman+Besfki" target="_blank">گۆتارێن مەلا هەرمان بێسفکی</a>`;
+            } else if(currentLang === 'sorani') {
+                list.innerHTML = `<a class="lecture-link" href="https://youtube.com/results?search_query=Mela+Fayeq+Sharazuri" target="_blank">وتارەکانی مامۆستا محەمەد مەلا فایەق</a>`;
+            }
+        }
+
+        function showMain() {
+            document.querySelectorAll('.sub-page').forEach(p => p.style.display = 'none');
+            document.getElementById('main-page').style.display = 'block';
+        }
+
+        function countTasbih() {
+            tasbihCount++;
+            document.getElementById('tasbih-num').innerText = tasbihCount;
+        }
+    </script>
+</body>
+  </html>
+  
