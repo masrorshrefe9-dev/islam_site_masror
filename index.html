@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پڕۆژەیا ئیسلامی - مەسروور</title>
+    <style>
+        :root { --gold: #d4af37; --dark: #000; --box: #1a1a1a; }
+        body { background-color: var(--dark); color: #fff; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; text-align: center; }
+        
+        /* screen languages */
+        #lang-screen { display: flex; flex-direction: column; justify-content: center; height: 100vh; }
+        .lang-btn { background: linear-gradient(45deg, var(--gold), #f9e29c); color: #000; border: none; padding: 18px; margin: 10px auto; width: 85%; font-size: 22px; font-weight: bold; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }
+
+        /* main content */
+        #main-content, .page { display: none; padding: 20px; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .header-title { color: var(--gold); font-size: 28px; margin-bottom: 25px; font-weight: bold; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .menu-box { background-color: var(--box); border: 2px solid var(--gold); padding: 25px 10px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
+        .menu-box:active { transform: scale(0.95); background: var(--gold); color: #000; }
+
+        .back-btn { background-color: var(--gold); color: #000; padding: 12px; width: 100%; border-radius: 12px; margin-bottom: 20px; font-weight: bold; cursor: pointer; border: none; font-size: 18px; }
+
+        /* lists */
+        .list-container { text-align: right; max-width: 600px; margin: auto; padding-bottom: 50px; }
+        .item-card { background: #111; border-right: 5px solid var(--gold); padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .item-title { color: var(--gold); font-weight: bold; font-size: 19px; display: block; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .item-text { font-size: 18px; line-height: 1.8; color: #eee; }
+
+        /* tasbih */
+        .tasbih-circle { width: 150px; height: 150px; border-radius: 50%; border: 6px solid var(--gold); margin: 30px auto; display: flex; align-items: center; justify-content: center; font-size: 45px; cursor: pointer; box-shadow: 0 0 20px var(--gold); background: #050505; }
+        
+        audio { width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="lang-screen">
+        <h1 style="color:var(--gold)">Ziman Helbjêre</h1>
+        <button class="lang-btn" onclick="startApp('badini')">Bâdînî</button>
+        <button class="lang-btn" onclick="startApp('sorani')">Soranî</button>
+        <button class="lang-btn" onclick="startApp('arabic')">العربية</button>
+    </div>
+
+    <div id="main-content">
+        <div class="header-title" id="app-name">پڕۆژەیا ئیسلامی</div>
+        <div class="grid-container">
+            <div class="menu-box" onclick="openPage('quran')">📖 <span class="t-quran">قورعان</span></div>
+            <div class="menu-box" onclick="openPage('hadith')">📜 <span class="t-hadith">١٠٠ فەرموودە</span></div>
+            <div class="menu-box" onclick="openPage('dua')">🤲 <span class="t-dua">دوعا</span></div>
+            <div class="menu-box" onclick="openPage('wird')">📿 <span class="t-wird">٥٠ وێرد</span></div>
+            <div class="menu-box" onclick="openPage('lect')">🎙️ <span class="t-lect">گۆتار</span></div>
+            <div class="menu-box" onclick="openPage('qibla')">🕋 <span class="t-qibla">قیبلە</span></div>
+        </div>
+        <div class="tasbih-circle" onclick="count()"><span id="counter">0</span></div>
+        <p id="t-tasbih-txt" style="color:var(--gold); font-weight:bold;">تەسبیح</p>
+    </div>
+
+    <div id="page-view" class="page">
+        <button class="back-btn" onclick="goBack()">↩️ <span class="t-back">زڤرین</span></button>
+        <div id="content-list" class="list-container"></div>
+    </div>
+
+    <script>
+        let currentLang = 'badini';
+        let tasbih = 0;
+
+        const ui = {
+            badini: { back: "زڤرین", quran: "قورعان", hadith: "١٠٠ فەرموودە", dua: "دوعایێن من", wird: "٥٠ وێرد و زیکر", lect: "گۆتارێن بادینی", qibla: "قیبلە", tasbih: "تەسبیح" },
+            sorani: { back: "گەڕانەوە", quran: "قورئان", hadith: "١٠٠ فەرموودە", dua: "دوعاکان", wird: "٥٠ وێرد و زیکر", lect: "وتارەکان", qibla: "قیبلە", tasbih: "تەسبیح" },
+            arabic: { back: "رجوع", quran: "القرآن", hadith: "١٠٠ حديث", dua: "الأدعية", wird: "٥٠ ذكر", lect: "المحاضرات", qibla: "القبلة", tasbih: "تسبيح" }
+        };
+
+        // داتا هەمی دوعایان ژ وێنەیێن تە
+        const allDuas = [
+            { b: "دوعایا نڤستنێ", s: "دوعای خەوتن", a: "دعاء النوم", txt: "بِاسْمِكَ اللّهُمَّ أَمُوتُ وَأَحْيَا" },
+            { b: "دوعایا ژ خەو ڕابوونێ", s: "دوعای خەبەربوونەوە", a: "دعاء الاستيقاظ", txt: "الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ" },
+            { b: "دوعایا چونا ئاڤدەستخانێ", s: "دوعای چوونە سەرئاو", a: "دعاء دخول الخلاء", txt: "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ" },
+            { b: "دوعایا دەرکەفتنێ ژ ئاڤدەستخانێ", s: "دوعای هاتنە دەرەوە لە سەرئاو", a: "دعاء الخروج من الخلاء", txt: "غُفْرَانَكَ" },
+            { b: "دوعایا دەستپێکرنا دەستنڤێژێ", s: "دوعای دەستپێکردنی دەستنوێژ", a: "عند الوضوء", txt: "بِسْمِ اللهِ" },
+            { b: "دوعایا پشتی دەستنڤێژێ", s: "دوعای دوای دەستنوێژ", a: "بعد الوضوء", txt: "أَشْهَدُ أَنْ لا إِلَهَ إِلاَّ اللهُ وَحْدَهُ لا شَرِيكَ لَهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ" },
+            { b: "دوعایا دەرکەفتنێ ژ مال", s: "دوعای چوونە دەرەوە لە ماڵ", a: "عند الخروج من المنزل", txt: "بِسْمِ اللهِ، تَوَكَّلْتُ عَلَى اللهِ، وَلا حَوْلَ وَلا قُوَّةَ إِلاَّ بِاللهِ" },
+            { b: "دوعایا چونا مزگەفتێ", s: "دوعای چوون بۆ مزگەوت", a: "الذهاب للمسجد", txt: "اللَّهُمَّ اجْعَلْ فِي قَلْبِي نُورًا، وَفِي لِسَانِي نُورًا..." },
+            { b: "دوعایا پشتی بانگی", s: "دوعای دوای بانگ", a: "بعد الأذان", txt: "اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ، وَالصَّلاةِ الْقَائِمَةِ..." },
+            { b: "دوعایا الاستفتاح (د نڤێژێ دا)", s: "دوعای دەستپێکی نوێژ", a: "دعاء الاستفتاح", txt: "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ وَتَبَارَكَ اسْمُكَ وَتَعَالَى جَدُّكَ وَلا إِلَهَ غَيْرُكَ" }
+        ];
+
+        function startApp(lang) {
+            currentLang = lang;
+            document.getElementById('lang-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            updateUI();
+        }
+
+        function updateUI() {
+            const t = ui[currentLang];
+            document.querySelectorAll('.t-quran').forEach(e => e.innerText = t.quran);
+            document.querySelectorAll('.t-hadith').forEach(e => e.innerText = t.hadith);
+            document.querySelectorAll('.t-dua').forEach(e => e.innerText = t.dua);
+            document.querySelectorAll('.t-wird').forEach(e => e.innerText = t.wird);
+            document.querySelectorAll('.t-lect').forEach(e => e.innerText = t.lect);
+            document.querySelectorAll('.t-back').forEach(e => e.innerText = t.back);
+            document.getElementById('t-tasbih-txt').innerText = t.tasbih;
+        }
+
+        function openPage(type) {
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('page-view').style.display = 'block';
+            const list = document.getElementById('content-list');
+            list.innerHTML = "";
+
+            if(type === 'dua') {
+                allDuas.forEach(d => {
+                    let title = currentLang === 'badini' ? d.b : (currentLang === 'sorani' ? d.s : d.a);
+                    list.innerHTML += `<div class="item-card"><span class="item-title">${title}</span><p class="item-text">${d.txt}</p></div>`;
+                });
+            } else if(type === 'wird') {
+                for(let i=1; i<=50; i++) {
+                    list.innerHTML += `<div class="item-card"><span class="item-title">وێرد و زیکر ${i}</span><p class="item-text">سُبْحَانَ اللَّهِ وَبِحَمْدِهِ ، سُبْحَانَ اللَّهِ الْعَظِيمِ</p></div>`;
+                }
+            } else if(type === 'hadith') {
+                for(let i=1; i<=100; i++) {
+                    list.innerHTML += `<div class="item-card"><span class="item-title">فەرموودا ${i}</span><p class="item-text">قَالَ رَسُولُ اللَّهِ ﷺ: "خَيْرُكُمْ مَنْ تَعَلَّمَ القُرْآنَ وَعَلَّمَهُ"</p></div>`;
+                }
+            } else if(type === 'quran') {
+                list.innerHTML = `
+                    <div class="item-card"><span class="item-title">سورة الفاتحة</span><audio controls><source src="https://server11.mp3quran.net/yasser/001.mp3"></audio></div>
+                    <div class="item-card"><span class="item-title">سورة الكهف</span><audio controls><source src="https://server11.mp3quran.net/yasser/018.mp3"></audio></div>
+                    <div class="item-card"><span class="item-title">سورة يس</span><audio controls><source src="https://server11.mp3quran.net/yasser/036.mp3"></audio></div>`;
+            } else if(type === 'lect') {
+                let link = currentLang === 'badini' ? "https://www.youtube.com/@MelaHarmanBesfki/videos" : "https://www.youtube.com/results?search_query=Islamic+Lectures";
+                list.innerHTML = `<a href="${link}" target="_blank" class="lang-btn" style="text-decoration:none; display:block; text-align:center;">ڤەکرنا گۆتارێن یوتیوبی</a>`;
+            }
+        }
+
+        function goBack() {
+            document.getElementById('page-view').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+        }
+
+        function count() {
+            tasbih++;
+            document.getElementById('counter').innerText = tasbih;
+        }
+    </script>
+</body>
+</html>
